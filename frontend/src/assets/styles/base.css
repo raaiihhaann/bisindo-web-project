@@ -1,0 +1,55 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+a {
+  text-decoration: none;
+}
+
+/* Untuk semua browser modern */
+::selection {
+  background-color: #FACC15; 
+  color: #000; 
+}
+
+/* Untuk Firefox */
+::-moz-selection {
+  background-color: #FACC15;
+  color: #000;
+}
+
+/* Custom Scrollbar - Claude Style */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}

@@ -1,0 +1,51 @@
+@import './base.css';
+
+:root {
+  /* Brand Colors */
+  --indigo-velvet: #3D348B;
+  --bright-amber: #FACC15;
+  --silver: #C4C4C4;
+  --black: #000000;
+  --white: #FFFFFF;
+}
+
+h1 {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 61px;
+  font-weight: bold;
+}
+
+h2 {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 49px;
+}
+
+h3 {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 39px;
+}
+
+h4 {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 31px;
+}
+
+h5 {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 25px;
+}
+
+h6 {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-size: 20px;
+}
+
+body {
+  font-family: 'Be Vietnam Pro', sans-serif;
+}
+
+.square {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    height: auto;
+}
