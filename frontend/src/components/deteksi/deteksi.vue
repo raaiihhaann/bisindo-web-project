@@ -88,181 +88,62 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useMediapipe } from '@/composables/useMediapipe'
-import { loadGestureModel, predictGesture } from '@/composables/useGestureModel'
-
+import { useGestureDetection } from '@/composables/useGestureDetection'
+import { useDetectionStatus } from '@/composables/useDetectionStatus'
+import { useCameraControl } from '@/composables/useCameraControl'
+import { useSystemInit } from '@/composables/useSystemInit'
 
 // ============================================
 // COMPOSABLES
 // ============================================
-const {
-  isReady,
-  isCameraActive,
-  isProcessing,
-  error,
-  initialize,
-  startCamera,
-  stopCamera
-} = useMediapipe()
+const mediapipe = useMediapipe()
+const systemInit = useSystemInit(mediapipe)
+const gestureDetection = useGestureDetection()
 
+// Status composable
+const statusHelpers = useDetectionStatus({
+  isReady: mediapipe.isReady,
+  modelLoaded: systemInit.isModelLoaded,  
+  isModelLoading: systemInit.isModelLoading,  
+  isInitializing: systemInit.isInitializing,
+  isCameraActive: mediapipe.isCameraActive,
+  isProcessing: mediapipe.isProcessing,
+  error: mediapipe.error,
+  modelError: systemInit.modelError
+})
 // ============================================
 // REFS
 // ============================================
 const videoElement = ref(null)
 const canvasElement = ref(null)
-const currentGesture = ref('')
-const confidence = ref('')
-const modelLoaded = ref(false)
-const modelError = ref(null)
-const isInitializing = ref(true)
 
 // ============================================
-// COMPUTED
+// CAMERA CONTROL
 // ============================================
-const isFullyReady = computed(() => {
-  return isReady.value && modelLoaded.value && !isInitializing.value
-})
-
-const statusText = computed(() => {
-  if (error.value || modelError.value) return '✕ Error'
-  if (isInitializing.value) return '⟳ Memuat sistem...'
-  if (!isReady.value) return '⟳ Memuat MediaPipe...'
-  if (!modelLoaded.value) return '⟳ Memuat Model CNN...'
-  if (isProcessing.value) return '⟳ Mengaktifkan kamera...'
-  if (isCameraActive.value) return '● Kamera aktif'
-  return '✓ Siap'
-})
-
-const statusClass = computed(() => {
-  if (error.value || modelError.value) return 'status-error'
-  if (!isFullyReady.value || isProcessing.value) return 'status-loading'
-  if (isCameraActive.value) return 'status-active'
-  return 'status-ok'
-})
-
-const footerText = computed(() => {
-  if (isCameraActive.value) {
-    return 'Deteksi aktif - Tunjukkan isyarat BISINDO Anda'
-  }
-  if (isProcessing.value) {
-    return 'Mohon tunggu, sedang memproses...'
-  }
-  if (isInitializing.value) {
-    return 'Memuat sistem...'
-  }
-  if (!isReady.value) {
-    return 'Memuat MediaPipe...'
-  }
-  if (!modelLoaded.value) {
-    return 'Memuat Model CNN...'
-  }
-  return 'Klik "Buka Kamera" untuk memulai deteksi'
-})
-
-const placeholderText = computed(() => {
-  if (isProcessing.value) return 'Memproses...'
-  if (isInitializing.value) return 'Memuat sistem...'
-  if (!isReady.value) return 'Memuat MediaPipe...'
-  if (!modelLoaded.value) return 'Memuat Model CNN...'
-  return 'Aktifkan kamera untuk memulai'
+const cameraControl = useCameraControl(mediapipe, {
+  videoElement,
+  canvasElement,
+  onLandmarksDetected: gestureDetection.handleLandmarksDetected,
+  onStop: gestureDetection.resetGestureDisplay
 })
 
 // ============================================
-// METHODS
+// DESTRUCTURE COMPOSABLES
 // ============================================
-const handleLandmarksDetected = (landmarks126, handsDetected) => {
-  // Jika tidak ada tangan terdeteksi
-  if (!handsDetected || handsDetected === 0) {
-    currentGesture.value = 'Tangan Tidak Terdeteksi'
-    confidence.value = '-'
-    return
-  }
-
-  if (landmarks126.length !== 126) {
-    console.warn('⚠️ Invalid landmarks length:', landmarks126.length)
-    currentGesture.value = 'Tangan Tidak Terdeteksi'
-    confidence.value = '-'
-    return
-  }
-
-  try {
-    const result = predictGesture(landmarks126)
-    if (!result) {
-      currentGesture.value = 'Tangan Tidak Terdeteksi'
-      confidence.value = '-'
-      return
-    }
-
-    currentGesture.value = result.label
-    confidence.value = `${(result.confidence * 100).toFixed(2)}%`
-  } catch (err) {
-    console.error('❌ Prediction error:', err)
-    currentGesture.value = 'Error'
-    confidence.value = '-'
-  }
-}
-
-const handleStartCamera = async () => {
-  if (!videoElement.value || !canvasElement.value) {
-    console.error('❌ Video or canvas element not found')
-    return
-  }
-
-  try {
-    console.log('🎬 Starting camera...')
-    
-    await startCamera(
-      videoElement.value,
-      canvasElement.value,
-      handleLandmarksDetected
-    )
-
-    console.log('✅ Camera started successfully')
-  } catch (err) {
-    console.error('❌ Camera error:', err)
-    // Error is already set in the composable
-  }
-}
-
-const handleStopCamera = () => {
-  console.log('🛑 Stopping camera...')
-
-  stopCamera()
-
-  // Reset gesture display
-  currentGesture.value = ''
-  confidence.value = ''
-
-  console.log('✅ Camera stopped')
-}
+const { isReady, isCameraActive, isProcessing, error } = mediapipe
+const { modelLoaded, modelError, isInitializing } = systemInit
+const { currentGesture, confidence } = gestureDetection
+const { isFullyReady, statusText, statusClass, footerText, placeholderText } = statusHelpers
+const { handleStartCamera, handleStopCamera } = cameraControl
 
 // ============================================
 // LIFECYCLE
 // ============================================
 onMounted(async () => {
   console.log('🎯 Component mounted')
-  isInitializing.value = true
-  
-  try {
-    // Step 1: Load MediaPipe
-    console.log('📦 [1/2] Loading MediaPipe...')
-    await initialize()
-    console.log('✅ MediaPipe loaded:', isReady.value)
-    
-    // Step 2: Load CNN Model
-    console.log('📦 [2/2] Loading CNN Model...')
-    await loadGestureModel()
-    modelLoaded.value = true
-    console.log('✅ CNN Model loaded')
-    
-    console.log('✅ All systems ready!')
-  } catch (err) {
-    console.error('❌ Initialization error:', err)
-    modelError.value = err.message || 'Gagal memuat sistem'
-  } finally {
-    isInitializing.value = false
-  }
+  await systemInit.initializeSystem()
 })
 </script>
 

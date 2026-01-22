@@ -8,28 +8,31 @@
                 class="video-card"
             >
                 <div class="video-thumbnail">
-                    <!-- Show iframe when playing, thumbnail when not -->
+                    <!-- Show video player when playing, thumbnail when not -->
                     <div 
                         v-if="playingIndex === index" 
                         class="video-player"
                     >
-                        <iframe
-                            :src="`https://www.youtube.com/embed/${video.videoId}?autoplay=1`"
-                            frameborder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowfullscreen
-                        ></iframe>
+                        <video
+                            :ref="el => videoRefs[index] = el"
+                            :src="video.videoPath"
+                            controls
+                            autoplay
+                            controlsList="nodownload"
+                            @ended="onVideoEnded(index)"
+                        ></video>
                     </div>
                     <div 
                         v-else 
                         class="thumbnail-wrapper"
                         @click="playVideo(index)"
                     >
-                        <img 
-                            :src="video.thumbnail" 
-                            :alt="video.title"
-                            class="thumbnail-image"
-                        />
+                        <video
+                            :src="video.videoPath + '#t=0.1'"
+                            class="thumbnail-video"
+                            muted
+                            preload="metadata"
+                        ></video>
                         <div class="play-overlay">
                             <div class="play-button">
                                 <svg 
@@ -90,48 +93,51 @@ defineProps({
 })
 
 const playingIndex = ref(null)
+const videoRefs = ref([])
 
 const videos = ref([
     {
-        videoId: 'ormEnv6ltz4',
-        thumbnail: 'https://img.youtube.com/vi/ormEnv6ltz4/maxresdefault.jpg',
+        videoPath: '/videos/A.mp4',
         letter: 'A',
-        title: 'Belajar huruf A dengan mudah'
+        title: 'Huruf A'
     },
     {
-        videoId: 'ormEnv6ltz4',
-        thumbnail: 'https://img.youtube.com/vi/ormEnv6ltz4/maxresdefault.jpg',
-        letter: 'B',
-        title: 'Cara membuat isyarat huruf B'
+        videoPath: '/videos/I.mp4',
+        letter: 'I',
+        title: 'Huruf I'
     },
     {
-        videoId: 'ormEnv6ltz4',
-        thumbnail: 'https://img.youtube.com/vi/ormEnv6ltz4/maxresdefault.jpg',
-        letter: 'C',
-        title: 'Tutorial gerakan huruf C'
+        videoPath: '/videos/U.mp4',
+        letter: 'U',
+        title: 'Huruf U'
     },
     {
-        videoId: 'ormEnv6ltz4',
-        thumbnail: 'https://img.youtube.com/vi/ormEnv6ltz4/maxresdefault.jpg',
-        letter: 'D',
-        title: 'Panduan isyarat huruf D'
-    },
-    {
-        videoId: 'ormEnv6ltz4',
-        thumbnail: 'https://img.youtube.com/vi/ormEnv6ltz4/maxresdefault.jpg',
+        videoPath: '/videos/E.mp4',
         letter: 'E',
-        title: 'Belajar gerakan huruf E'
+        title: 'Huruf E'
     },
     {
-        videoId: 'ormEnv6ltz4',
-        thumbnail: 'https://img.youtube.com/vi/ormEnv6ltz4/maxresdefault.jpg',
-        letter: 'F',
-        title: 'Cara mudah isyarat huruf F'
+        videoPath: '/videos/O.mp4',
+        letter: 'O',
+        title: 'Huruf O'
     }
 ])
 
 const playVideo = (index) => {
+    // Stop any currently playing video
+    if (playingIndex.value !== null && videoRefs.value[playingIndex.value]) {
+        videoRefs.value[playingIndex.value].pause()
+        videoRefs.value[playingIndex.value].currentTime = 0
+    }
     playingIndex.value = index
+}
+
+const onVideoEnded = (index) => {
+    // Optional: Reset to thumbnail when video ends
+    // playingIndex.value = null
+    
+    // Or keep showing the video player with controls
+    // (user can replay or close manually)
 }
 </script>
 
@@ -180,24 +186,24 @@ const playVideo = (index) => {
     position: relative;
     width: 100%;
     height: 100%;
+    background-color: #000;
 }
 
-.video-player iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
+.video-player video {
     width: 100%;
     height: 100%;
+    object-fit: contain;
 }
 
-.thumbnail-image {
+.thumbnail-video {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
+    object-fit: contain; /* GANTI dari cover */
+    background-color: #000; /* opsional, biar letterbox hitam */
 }
 
-.thumbnail-wrapper:hover .thumbnail-image {
+
+.thumbnail-wrapper:hover .thumbnail-video {
     transform: scale(1.05);
 }
 

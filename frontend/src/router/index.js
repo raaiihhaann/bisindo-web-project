@@ -25,6 +25,26 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+  
+  // ⭐ Tambahkan ini
+  scrollBehavior(to, from, savedPosition) {
+    // Jika user tekan tombol Back/Forward browser, 
+    // kembalikan ke posisi scroll sebelumnya
+    if (savedPosition) {
+      return savedPosition
+    }
+    
+    // Jika ada hash anchor (#section-id)
+    if (to.hash) {
+      return {
+        el: to.hash,
+        behavior: 'smooth'
+      }
+    }
+    
+    // Default: scroll ke atas untuk semua navigasi baru
+    return { top: 0, left: 0 }
+  }
 })
 
 export default router

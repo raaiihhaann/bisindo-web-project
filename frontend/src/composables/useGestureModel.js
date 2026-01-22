@@ -1,17 +1,38 @@
 // composables/useGestureModel.js
 import * as tf from '@tensorflow/tfjs'
+import { ref } from 'vue'
 
 const LABELS = ['a', 'e', 'i', 'o', 'u']
 const THRESHOLD = 0.5
 
+// ============================================
+// MODULE-LEVEL STATE (SINGLETON)
+// ============================================
 let model = null
-let isLoaded = false
 
+// ⭐ Vue Reactive State - PERSISTENT across components
+const isModelLoaded = ref(false)
+const modelError = ref(null)
+const isModelLoading = ref(false)
+
+// ============================================
+// LOAD MODEL (ONLY ONCE)
+// ============================================
 export async function loadGestureModel() {
-  if (isLoaded) {
-    console.log('ℹ️ Model already loaded')
-    return
+  // ⭐ Skip jika sudah loaded
+  if (isModelLoaded.value) {
+    console.log('✅ Model already loaded, skipping...')
+    return true
   }
+
+  // ⭐ Skip jika sedang loading
+  if (isModelLoading.value) {
+    console.log('⏳ Model is currently loading, please wait...')
+    return false
+  }
+
+  isModelLoading.value = true
+  modelError.value = null
 
   try {
     console.log('📦 Loading TensorFlow.js version:', tf.version.tfjs)
@@ -32,18 +53,27 @@ export async function loadGestureModel() {
     warmupOutput.dispose()
     warmupInput.dispose()
     
-    isLoaded = true
+    isModelLoaded.value = true
     console.log('✅ CNN model ready')
+    return true
     
   } catch (error) {
     console.error('❌ Failed to load model:', error)
     console.error('Error details:', error.stack)
-    throw new Error(`Gagal memuat model CNN: ${error.message}`)
+    modelError.value = `Gagal memuat model CNN: ${error.message}`
+    isModelLoaded.value = false
+    return false
+    
+  } finally {
+    isModelLoading.value = false
   }
 }
 
+// ============================================
+// PREDICT GESTURE
+// ============================================
 export function predictGesture(landmarks126) {
-  if (!model) {
+  if (!model || !isModelLoaded.value) {
     console.warn('⚠️ Model not loaded yet')
     return null
   }
@@ -88,10 +118,21 @@ export function predictGesture(landmarks126) {
   })
 }
 
-export function isModelLoaded() {
-  return isLoaded
+// ============================================
+// COMPOSABLE FUNCTION (for reactive state)
+// ============================================
+export function useGestureModel() {
+  return {
+    isModelLoaded,
+    modelError,
+    isModelLoading,
+    loadGestureModel
+  }
 }
 
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
 export function getLabels() {
   return LABELS
 }
